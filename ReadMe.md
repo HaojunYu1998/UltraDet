@@ -5,7 +5,7 @@ This is the official implementation of [Mining Negative Temporal Contexts For Fa
 [[Arxiv]](https://arxiv.org/abs/2305.18060) [[PDF]](https://arxiv.org/pdf/2305.18060.pdf) [[Code]](https://github.com/HaojunYu1998/UltraDet)
 
 <div align="center">
-    <img src="assets/teaser.png" width="75%"/>
+    <img src="assets/teaser.png" width="100%"/>
 </div>
 
 ## Abstract
@@ -18,7 +18,7 @@ The NTCA module leverages RoI-level NTC which are crucial for radiologists but i
 
 
 <div align="center">
-    <img src="assets/visualization.png" width="50%"/>
+    <img src="assets/visualization.png" width="100%"/>
 </div>
 
 <center>
@@ -335,7 +335,7 @@ UltraDet/
 
 ## Dataset Preparation
 
-We are pleased to share the weights of the models required for UltraDet inference. You can access them through the following links:
+We provide high quality annotation files. You can access them through the following links:
 
 <center>
 <table>
