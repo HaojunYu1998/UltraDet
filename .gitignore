@@ -1,0 +1,49 @@
+# output dir
+output*
+miccai_output*
+pretrained_models
+joblog
+
+*.jpg
+*.png
+*.txt
+*.out
+run.sh
+
+# compilation and distribution
+__pycache__
+_ext
+*.pyc
+*.so
+build/
+dist/
+datasets/
+*egg-info/**
+
+# pytorch/python/numpy formats
+*.pth
+*.pkl
+*.npy
+
+# ipython/jupyter notebooks
+notebook
+*.ipynb
+**/.ipynb_checkpoints/
+
+# Editor temporaries
+*.swn
+*.swo
+*.swp
+*~
+
+# Pycharm editor settings
+.idea
+
+# VS code
+.vscode
+test_2022*
+# notebook
+visualizations
+datasets
+local_outputs
+*.pyc
