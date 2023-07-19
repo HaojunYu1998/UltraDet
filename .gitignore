@@ -5,7 +5,7 @@ pretrained_models
 joblog
 
 *.jpg
-*.png
+# *.png
 *.txt
 *.out
 run.sh
