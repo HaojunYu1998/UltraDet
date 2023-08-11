@@ -58,16 +58,18 @@ class TemporalRCNN(nn.Module):
         proposals, proposal_losses = self.proposal_generator(
             images, features, gt_instances)
 
-        if self.use_deform_context:
-            _, detector_losses = self.roi_heads({"valid_ratios": valid_ratios},
-                                                features, proposals,
+        # if self.use_deform_context:
+        #     _, detector_losses = self.roi_heads({"valid_ratios": valid_ratios},
+        #                                         features, proposals,
+        #                                         gt_instances)
+        # elif self.use_flow_context:
+        #     _, detector_losses = self.roi_heads(images, features, proposals,
+        #                                         gt_instances)
+        # else:
+            # _, detector_losses = self.roi_heads(batched_inputs, features,
+            #                                     proposals, gt_instances)
+        _, detector_losses = self.roi_heads(images, features, proposals,
                                                 gt_instances)
-        elif self.use_flow_context:
-            _, detector_losses = self.roi_heads(images, features, proposals,
-                                                gt_instances)
-        else:
-            _, detector_losses = self.roi_heads(batched_inputs, features,
-                                                proposals, gt_instances)
 
         losses = {}
         losses.update(detector_losses)
