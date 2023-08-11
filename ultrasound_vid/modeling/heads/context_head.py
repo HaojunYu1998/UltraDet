@@ -276,7 +276,7 @@ class Res5FlowContextHeads(Res5TemporalROIBoxHeads):
         return pred_instances, {}
 
     def reset(self):
-        super().reset()
+        self.history_buffer.clear()
         self.context_image_buffer.clear()
         self.context_feature_buffer.clear()
         self.frame_idx = 0
