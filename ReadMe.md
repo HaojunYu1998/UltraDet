@@ -1,6 +1,6 @@
-# Ultrasound-VID
+# UltraDet
 
-This is the official implementation of [Mining Negative Temporal Contexts For False Positive Suppression In Real-Time Ultrasound Lesion Detection](https://arxiv.org/abs/2305.18060). Our paper has been early accepted for MICCAI 2023! 
+This is the official implementation of [Mining Negative Temporal Contexts For False Positive Suppression In Real-Time Ultrasound Lesion Detection](https://arxiv.org/abs/2305.18060). We provide a real-time breast ultrasound detection solution to **reduce about 50% FPs at a recall rate of 0.90**. Our paper has been early accepted by MICCAI 2023!
 
 [[Arxiv]](https://arxiv.org/abs/2305.18060) [[PDF]](https://arxiv.org/pdf/2305.18060.pdf) [[Code]](https://github.com/HaojunYu1998/UltraDet)
 
@@ -8,11 +8,11 @@ This is the official implementation of [Mining Negative Temporal Contexts For Fa
     <img src="assets/teaser.png" width="100%"/>
 </div>
 
-## Abstract
+## Paper Abstract
 
 During ultrasonic scanning processes, real-time lesion detection can assist radiologists in accurate cancer diagnosis. However, this essential task remains challenging and underexplored. General-purpose real-time object detection models can mistakenly report obvious false positives (FPs) when applied to ultrasound videos, potentially misleading junior radiologists. One key issue is their failure to utilize negative symptoms in previous frames, denoted as negative temporal contexts (NTC). To address this issue, we propose to extract contexts from previous frames, including NTC, with the guidance of inverse optical flow. By aggregating extracted contexts, we endow the model with the ability to suppress FPs by leveraging NTC. We call the resulting model UltraDet. The proposed UltraDet demonstrates significant improvement over previous state-of-the-arts and achieves real-time inference speed.
 
-## Result
+## Experiment Results
 
 The NTCA module leverages RoI-level NTC which are crucial for radiologists but ignored in previous works, thereby effectively improving the detection performance in a reliable and interpretable way. We plug the NTCA module into a basic real-time detector to form UltraDet. Experiments on CVA-BUS dataset demonstrate that UltraDet, with real-time inference speed, significantly outperforms previous works, reducing about 50% FPs at a recall rate of 0.90.
 
@@ -244,7 +244,7 @@ The NTCA module leverages RoI-level NTC which are crucial for radiologists but i
 
 ## Citing UltraDet
 
-If you find UltraDet useful in your research, please consider citing:
+If you find UltraDet useful in your research, please cite our paper:
 
 ```bibtex
 @article{yu2023mining,
@@ -257,7 +257,7 @@ If you find UltraDet useful in your research, please consider citing:
 
 ## Requirments
 
-The whole project is based on [detectron2](https://github.com/facebookresearch/detectron2), which is used as a package.
+The whole project is based on [detectron2](https://github.com/facebookresearch/detectron2).
 
 ## Installation
 
