@@ -282,7 +282,6 @@ pip install prettytable
 pip install fire
 pip install scipy
 pip install timm
-pip install pytorch_metric_learning
 
 # install ultrasound_vid
 git clone https://github.com/HaojunYu1998/UltraDet.git
@@ -293,9 +292,6 @@ pip install -e .
 # AttributeError: module 'distutils' has no attribute 'version'
 pip uninstall setuptools
 pip install setuptools==58.0.4
-
-# Visualizaition
-pip install vidgear
 ```
 
 ## Checkpoints
@@ -389,9 +385,15 @@ You can train or infer with UltraDet by running the following code:
 python train_net.py --num-gpus {GPU_NUM} \
 --config-file {CONFIG_FILES}
 
-# Inference
+# Validation
 python train_net.py --num-gpus {GPU_NUM} --eval-only --resume \
+--config-file {CONFIG_FILES}
+
+# Test
+python train_net.py --num-gpus {GPU_NUM} --eval-only  --resume \
 --config-file {CONFIG_FILES} \
+DATASETS.SPLIT "test" \
+DATASETS.NUM_FOLDS 1 \
 # MODEL.WEIGHTS 'pretrained_models/ultradet.pth' # If you wish to load the pre-trained weights of UltraDet that we have released, please include this line of code
 ```
 
