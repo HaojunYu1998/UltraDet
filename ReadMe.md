@@ -351,9 +351,9 @@ We provide high quality annotation files. You can access them through the follow
 </table>
 </center>
 
-Please download PNG images from https://github.com/jhl-Det/CVA-Net and arrange the images and labels in the COCO format.
+Please download PNG images from [CVA-Net](https://github.com/jhl-Det/CVA-Net) and arrange the images and labels in the COCO format. If you encounter any data-related issues, please contact us via ``haojunyu@pku.edu.cn``.
 
-**Note**: We are using the initial version of the data provided by the authors of CVA-Net. The authors later made corrections to the annotations (please see their Github repository). Our high-quality annotations reference the correction content, and the video and image paths in the annotations are from the paths in the initial version of the data.
+**Note: The authors of CVA-Net dataset have made corrections to the benign/malignant classification annotations** (please see [CVA-Net](https://github.com/jhl-Det/CVA-Net)). To use our high-quality annotations, please first correct the video and image location in ``rawframes/``.
 
 ```
 UltraDet/
