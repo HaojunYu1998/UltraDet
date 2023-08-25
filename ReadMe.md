@@ -1,6 +1,6 @@
 # UltraDet
 
-This is the official implementation of [Mining Negative Temporal Contexts For False Positive Suppression In Real-Time Ultrasound Lesion Detection](https://arxiv.org/abs/2305.18060). We provide a real-time breast ultrasound detection solution to **reduce about 50% FPs at a recall rate of 0.90**. Our paper has been early accepted by MICCAI 2023!
+This is the official implementation of [Mining Negative Temporal Contexts For False Positive Suppression In Real-Time Ultrasound Lesion Detection](https://arxiv.org/abs/2305.18060). We provide a real-time breast ultrasound detection solution to **reduce about 50% FPs at a recall rate of 0.90**. Also, we provide **high-quality bounding box labels** for the [CVA-Net](https://github.com/jhl-Det/CVA-Net) breast ultrasound video dataset. Our paper has been early accepted by MICCAI 2023!
 
 [[Arxiv]](https://arxiv.org/abs/2305.18060) [[PDF]](https://arxiv.org/pdf/2305.18060.pdf) [[Code]](https://github.com/HaojunYu1998/UltraDet)
 
