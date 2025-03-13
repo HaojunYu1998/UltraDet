@@ -6,21 +6,17 @@ import torch
 from torch import nn
 
 from detectron2.layers import ShapeSpec
+# from detectron2.modeling.anchor_generator import _create_grid_offsets
 
 
-def _create_grid_offsets(size: List[int], stride: int, offset: float,
-                         device_tensor: torch.device):
+def _create_grid_offsets(size: List[int], stride: int, offset: float, device_tensor: torch.device):
     grid_height, grid_width = size
-    shifts_x = torch.arange(offset * stride,
-                            grid_width * stride,
-                            step=stride,
-                            dtype=torch.float32,
-                            device=device_tensor.device)
-    shifts_y = torch.arange(offset * stride,
-                            grid_height * stride,
-                            step=stride,
-                            dtype=torch.float32,
-                            device=device_tensor.device)
+    shifts_x = torch.arange(
+        offset * stride, grid_width * stride, step=stride, dtype=torch.float32, device=device_tensor.device
+    )
+    shifts_y = torch.arange(
+        offset * stride, grid_height * stride, step=stride, dtype=torch.float32, device=device_tensor.device
+    )
 
     shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
     shift_x = shift_x.reshape(-1)
@@ -37,8 +33,8 @@ class ShiftGenerator(nn.Module):
         super().__init__()
         # fmt: off
         self.num_shifts = cfg.MODEL.SHIFT_GENERATOR.NUM_SHIFTS
-        self.strides = [x.stride for x in input_shape]
-        self.offset = cfg.MODEL.SHIFT_GENERATOR.OFFSET
+        self.strides    = [x.stride for x in input_shape]
+        self.offset     = cfg.MODEL.SHIFT_GENERATOR.OFFSET
         # fmt: on
 
         self.num_features = len(self.strides)
@@ -50,12 +46,10 @@ class ShiftGenerator(nn.Module):
     def grid_shifts(self, grid_sizes, device_tensor):
         shifts_over_all = []
         for size, stride in zip(grid_sizes, self.strides):
-            shift_x, shift_y = _create_grid_offsets(size, stride, self.offset,
-                                                    device_tensor)
+            shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, device_tensor)
             shifts = torch.stack((shift_x, shift_y), dim=1)
 
-            shifts_over_all.append(
-                shifts.repeat_interleave(self.num_shifts, dim=0))
+            shifts_over_all.append(shifts.repeat_interleave(self.num_shifts, dim=0))
 
         return shifts_over_all
 

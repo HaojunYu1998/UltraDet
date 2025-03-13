@@ -1,0 +1,2 @@
+_BASE_: "Base-UltraDet_R34_C4.yaml"
+OUTPUT_DIR: "miccai_outputs/UltraDet/fold0_iter1w"

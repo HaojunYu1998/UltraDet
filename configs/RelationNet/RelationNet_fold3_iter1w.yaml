@@ -1,0 +1,4 @@
+_BASE_: "RelationNet_fold0_iter1w.yaml"
+OUTPUT_DIR: "miccai_outputs/RelationNet/fold3_iter1w"
+DATASETS:
+  TEST_FOLDS: (3,)

@@ -1,0 +1,5 @@
+_BASE_: "R18_PTSEFormer_fold0_iter1w.yaml"
+OUTPUT_DIR: "miccai_outputs/PTSEFormer/R18_fold1_iter1w"
+DATASETS:
+  TEST_FOLDS: (1,)
+  JSON_TEST_FOLDS: (1,)

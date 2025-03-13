@@ -387,6 +387,7 @@ class FastRCNNOutputLayers(nn.Module):
         smooth_l1_beta: float = 0.0,
         box_reg_loss_type: str = "smooth_l1",
         loss_weight: Union[float, Dict[str, float]] = 1.0,
+        organ_specific=(),
     ):
         """
         Args:
@@ -412,17 +413,34 @@ class FastRCNNOutputLayers(nn.Module):
             input_shape.channels * (input_shape.width or 1) * (input_shape.height or 1)
         )
 
-        # self.organ = None
+        self.organ = None
+        self.organ_specific = organ_specific
         init_cls = []
         init_reg = []
         # prediction layer for num_classes foreground classes and one background class (hence + 1)
-        self.cls_score = Linear(input_size, num_classes + 1)
-        init_cls.append(self.cls_score)
+        if "cls" in self.organ_specific:
+            # organ-specific classification layers
+            print("enable organ-specific classification!")
+            self.cls_score = None
+            self.breast_cls = Linear(input_size, num_classes + 1)
+            self.thyroid_cls = Linear(input_size, num_classes + 1)
+            init_cls += [self.breast_cls, self.thyroid_cls]
+        else:
+            self.cls_score = Linear(input_size, num_classes + 1)
+            init_cls.append(self.cls_score)
 
         num_bbox_reg_classes = 1 if cls_agnostic_bbox_reg else num_classes
         box_dim = len(box2box_transform.weights)
-        self.bbox_pred = Linear(input_size, num_bbox_reg_classes * box_dim)
-        init_reg.append(self.bbox_pred)
+        if "reg" in self.organ_specific:
+            # organ-sepcific regression layers
+            print("enable organ-specific regression!")
+            self.bbox_pred = None
+            self.breast_reg = Linear(input_size, num_bbox_reg_classes * box_dim)
+            self.thyroid_reg = Linear(input_size, num_bbox_reg_classes * box_dim)
+            init_reg += [self.breast_reg, self.thyroid_reg]
+        else:
+            self.bbox_pred = Linear(input_size, num_bbox_reg_classes * box_dim)
+            init_reg.append(self.bbox_pred)
 
         for l in init_cls:
             nn.init.normal_(l.weight, std=0.01)
@@ -457,9 +475,17 @@ class FastRCNNOutputLayers(nn.Module):
             "test_topk_per_image"   : cfg.TEST.DETECTIONS_PER_IMAGE,
             "box_reg_loss_type"     : cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_TYPE,
             "loss_weight"           : {"loss_box_reg": cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_WEIGHT},
+            "organ_specific"        : cfg.MODEL.ORGAN_SPECIFIC.ENABLE
             # fmt: on
         }
 
+    def switch(self, organ):
+        self.organ = organ
+        assert self.organ == "thyroid" or self.organ == "breast"
+        if "cls" in self.organ_specific:
+            self.cls_score = self.thyroid_cls if organ == "thyroid" else self.breast_cls
+        if "reg" in self.organ_specific:
+            self.bbox_pred = self.thyroid_reg if organ == "thyroid" else self.breast_reg
 
     def forward(self, x):
         """

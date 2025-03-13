@@ -1,0 +1,4 @@
+_BASE_: "TransVOD_fold0_iter1w.yaml"
+OUTPUT_DIR: "miccai_outputs/TransVOD/fold1_iter1w"
+DATASETS:
+  TEST_FOLDS: (1,)

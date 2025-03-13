@@ -1,0 +1,2 @@
+_BASE_: "Base-DeformDETR_R34_C4.yaml"
+OUTPUT_DIR: "miccai_outputs/DeformDETR/fold0_iter1w"

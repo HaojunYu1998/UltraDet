@@ -1,11 +1,16 @@
 import itertools
 import logging
+import os
+import json
+import copy
+import pickle
 import torch
 import torch.utils.data
+import numpy as np
 from detectron2.data import samplers
 from detectron2.data.catalog import DatasetCatalog
 from detectron2.data.common import DatasetFromList, MapDataset
-from detectron2.utils.comm import get_world_size, is_main_process
+from detectron2.utils.comm import get_world_size, get_rank, is_main_process
 
 from .dataset_mapper import UltrasoundTrainingMapper, UltrasoundTestMapper
 from .samplers import InferenceSampler, IsolateTrainingSampler
@@ -65,8 +70,6 @@ def get_video_detection_dataset_dicts(dataset_names, cfg, is_train=True):
         dataset_dicts.append(cur_dataset_dicts)
 
     dataset_dicts = list(itertools.chain.from_iterable(dataset_dicts))
-    # # NOTE: debug, remove this
-    # dataset_dicts = [d for d in dataset_dicts if "f29dca90eb2022f" in d["relpath"]]
 
     if len(dataset_dicts) == 0:
         return dataset_dicts
@@ -242,14 +245,13 @@ def print_dataset_statistics(dataset_dicts):
     total_unique_object_number = 0
 
     for video_dict in dataset_dicts:
-        track_ids = []
         frame_annos = video_dict["frame_anno"]
         total_frame_length += len(frame_annos)
         for frame_id in frame_annos:
             frame_dict = frame_annos[frame_id]
             total_object_number += len(frame_dict["annotations"])
-            track_ids += [anno["track_id"] for anno in frame_dict["annotations"]]
-        total_unique_object_number += len(set(track_ids))
+        if "box_tracks" in video_dict:
+            total_unique_object_number += len(video_dict["box_tracks"])
 
     logger.info(f">> >> >> Print dataset statistics. start.")
     logger.info(f"video_num : {video_num}")

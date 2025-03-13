@@ -1,0 +1,6 @@
+_BASE_: "Base-FGFA_R34_C4.yaml"
+MODEL:
+  WEIGHTS: "pretrained_models/r18.pkl"
+  RESNETS:
+    DEPTH: 18
+OUTPUT_DIR: "miccai_outputs/FGFA/R18_fold0_iter1w"

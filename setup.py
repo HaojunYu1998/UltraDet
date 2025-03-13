@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 setup(
     name="ultra_det",
     version="0.1dev0",
-    author="Haojun Yu",
+    author="Anonymous",
     description="Detection for ultrasound videos.",
     packages=find_packages(exclude=("tests",)),
     python_requires=">=3.7",

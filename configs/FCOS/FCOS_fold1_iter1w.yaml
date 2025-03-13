@@ -1,0 +1,4 @@
+_BASE_: "FCOS_fold0_iter1w.yaml"
+OUTPUT_DIR: "miccai_outputs/FCOS/fold1_iter1w"
+DATASETS:
+  TEST_FOLDS: (1,)

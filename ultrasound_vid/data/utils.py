@@ -2,6 +2,7 @@ import hashlib
 
 import numpy as np
 from detectron2.utils.env import seed_all_rng
+from path import Path
 
 
 def hash_idx(rel_path, mod):

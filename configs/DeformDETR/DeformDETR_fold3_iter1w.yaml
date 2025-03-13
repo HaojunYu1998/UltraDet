@@ -1,0 +1,4 @@
+_BASE_: "DeformDETR_fold0_iter1w.yaml"
+OUTPUT_DIR: "miccai_outputs/DeformDETR/fold3_iter1w"
+DATASETS:
+  TEST_FOLDS: (3,)

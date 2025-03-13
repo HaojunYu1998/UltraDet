@@ -1,0 +1,2 @@
+_BASE_: "Base-BasicDet_R34_C4.yaml"
+OUTPUT_DIR: "miccai_outputs/BasicDet/fold0_iter1w"

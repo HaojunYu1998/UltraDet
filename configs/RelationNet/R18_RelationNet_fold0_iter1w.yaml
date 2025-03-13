@@ -1,0 +1,6 @@
+_BASE_: "Base-RelationNet_R34_C4.yaml"
+MODEL:
+  WEIGHTS: "pretrained_models/r18.pkl"
+  RESNETS:
+    DEPTH: 18
+OUTPUT_DIR: "miccai_outputs/RelationNet/R18_fold0_iter1w"

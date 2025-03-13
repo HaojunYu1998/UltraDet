@@ -1,0 +1,2 @@
+_BASE_: "Base-RetinaNet_R34_C4.yaml"
+OUTPUT_DIR: "miccai_outputs/RetinaNet/fold0_iter1w"

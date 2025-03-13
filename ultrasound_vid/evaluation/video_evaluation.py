@@ -33,7 +33,7 @@ class UltrasoundVideoDetectionEvaluator(DatasetEvaluator):
     the official API.
     """
 
-    def __init__(self, dataset_name):
+    def __init__(self, dataset_name, rpn_only=False):
         """
         Args:
             dataset_name (str): name of the dataset, e.g., "voc_2007_test"
@@ -59,10 +59,14 @@ class UltrasoundVideoDetectionEvaluator(DatasetEvaluator):
         self._cpu_device = torch.device("cpu")
         self._logger = logging.getLogger(__name__)
         self._prediction_files = list()
+        self._rpn_only = rpn_only
         self.predictions = None
 
     def process(self, video_info, video_outputs, dump_dir):
-        dump_dir = os.path.join(dump_dir, "predictions", self._dataset_name)
+        if self._rpn_only:
+            dump_dir = os.path.join(dump_dir, "rpn_predictions", self._dataset_name)
+        else:
+            dump_dir = os.path.join(dump_dir, "predictions", self._dataset_name)
         os.makedirs(dump_dir, exist_ok=True)
         relpath = video_info["relpath"]
         video_outputs = [
@@ -74,7 +78,10 @@ class UltrasoundVideoDetectionEvaluator(DatasetEvaluator):
         self._prediction_files.append(save_file)
 
     def load_predictions(self, dump_dir):
-        dump_dir = os.path.join(dump_dir, "predictions", self._dataset_name)
+        if self._rpn_only:
+            dump_dir = os.path.join(dump_dir, "rpn_predictions", self._dataset_name)
+        else:
+            dump_dir = os.path.join(dump_dir, "predictions", self._dataset_name)
         if not comm.is_main_process():
             return
         from glob import glob

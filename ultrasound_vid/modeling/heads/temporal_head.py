@@ -17,7 +17,8 @@ from detectron2.utils.comm import get_rank
 from torch import nn
 
 from ultrasound_vid.modeling.proposal_generator.proposal_utils import (
-    add_ground_truth_to_proposals, )
+    add_ground_truth_to_proposals,
+)
 from ultrasound_vid.modeling.layers import ROIRelationLayers
 from ultrasound_vid.modeling.heads.fast_rcnn import FastRCNNOutputLayers
 from ultrasound_vid.modeling.backbone.resnet import (
@@ -43,20 +44,20 @@ class TemporalROIHeads(torch.nn.Module):
         super(TemporalROIHeads, self).__init__()
 
         # fmt: off
-        self.batch_size_per_image = cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE
-        self.positive_sample_fraction = cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION
-        self.test_score_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST
-        self.test_nms_thresh = cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST
-        self.test_detections_per_img = cfg.TEST.DETECTIONS_PER_IMAGE
-        self.in_features = cfg.MODEL.ROI_HEADS.IN_FEATURES
-        self.num_classes = cfg.MODEL.ROI_HEADS.NUM_CLASSES
-        self.proposal_append_gt = cfg.MODEL.ROI_HEADS.PROPOSAL_APPEND_GT
-        self.feature_strides = {k: v.stride for k, v in input_shape.items()}
-        self.cls_agnostic_bbox_reg = cfg.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG
-        self.smooth_l1_beta = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
-        self.interval_pre_test = cfg.MODEL.ROI_BOX_HEAD.INTERVAL_PRE_TEST
-        self.interval_after_test = cfg.MODEL.ROI_BOX_HEAD.INTERVAL_AFTER_TEST
-        self.causal_relation = cfg.MODEL.ROI_BOX_HEAD.CAUSAL_RELATION
+        self.batch_size_per_image       = cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE
+        self.positive_sample_fraction   = cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION
+        self.test_score_thresh          = cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST
+        self.test_nms_thresh            = cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST
+        self.test_detections_per_img    = cfg.TEST.DETECTIONS_PER_IMAGE
+        self.in_features                = cfg.MODEL.ROI_HEADS.IN_FEATURES
+        self.num_classes                = cfg.MODEL.ROI_HEADS.NUM_CLASSES
+        self.proposal_append_gt         = cfg.MODEL.ROI_HEADS.PROPOSAL_APPEND_GT
+        self.feature_strides            = {k: v.stride for k, v in input_shape.items()}
+        self.cls_agnostic_bbox_reg      = cfg.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG
+        self.smooth_l1_beta             = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
+        self.interval_pre_test          = cfg.MODEL.ROI_BOX_HEAD.INTERVAL_PRE_TEST
+        self.interval_after_test        = cfg.MODEL.ROI_BOX_HEAD.INTERVAL_AFTER_TEST
+        self.causal_relation            = cfg.MODEL.ROI_BOX_HEAD.CAUSAL_RELATION
         # fmt: on
 
         # Matcher to assign box proposals to gt boxes
@@ -68,7 +69,8 @@ class TemporalROIHeads(torch.nn.Module):
 
         # Box2BoxTransform for bounding box regression
         self.box2box_transform = Box2BoxTransform(
-            weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS)
+            weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS
+        )
 
     @property
     def device(self):
@@ -124,8 +126,8 @@ class TemporalROIHeads(torch.nn.Module):
 
     @torch.no_grad()
     def label_and_sample_proposals(
-            self, proposals: List[Instances],
-            targets: List[Instances]) -> List[Instances]:
+        self, proposals: List[Instances], targets: List[Instances]
+    ) -> List[Instances]:
         """
         Prepare some proposals to be used to train the ROI heads.
         It performs box matching between `proposals` and `targets`, and assigns
@@ -171,11 +173,12 @@ class TemporalROIHeads(torch.nn.Module):
         for proposals_per_image, targets_per_image in zip(proposals, targets):
             has_gt = len(targets_per_image) > 0
             match_quality_matrix = pairwise_iou(
-                targets_per_image.gt_boxes, proposals_per_image.proposal_boxes)
-            matched_idxs, matched_labels = self.proposal_matcher(
-                match_quality_matrix)
+                targets_per_image.gt_boxes, proposals_per_image.proposal_boxes
+            )
+            matched_idxs, matched_labels = self.proposal_matcher(match_quality_matrix)
             sampled_idxs, gt_classes = self._sample_proposals(
-                matched_idxs, matched_labels, targets_per_image.gt_classes)
+                matched_idxs, matched_labels, targets_per_image.gt_classes
+            )
 
             # Set target attributes of the sampled proposals:
             proposals_per_image = proposals_per_image[sampled_idxs]
@@ -189,20 +192,18 @@ class TemporalROIHeads(torch.nn.Module):
                 # like masks, keypoints, etc, will filter the proposals again,
                 # (by foreground/background, or number of keypoints in the image, etc)
                 # so we essentially index the data twice.
-                for (trg_name,
-                     trg_value) in targets_per_image.get_fields().items():
-                    if trg_name.startswith(
-                            "gt_") and not proposals_per_image.has(trg_name):
-                        proposals_per_image.set(trg_name,
-                                                trg_value[sampled_targets])
+                for (trg_name, trg_value) in targets_per_image.get_fields().items():
+                    if trg_name.startswith("gt_") and not proposals_per_image.has(
+                        trg_name
+                    ):
+                        proposals_per_image.set(trg_name, trg_value[sampled_targets])
             else:
                 gt_boxes = Boxes(
-                    targets_per_image.gt_boxes.tensor.new_zeros(
-                        (len(sampled_idxs), 4)))
+                    targets_per_image.gt_boxes.tensor.new_zeros((len(sampled_idxs), 4))
+                )
                 proposals_per_image.gt_boxes = gt_boxes
 
-            num_bg_samples.append(
-                (gt_classes == self.num_classes).sum().item())
+            num_bg_samples.append((gt_classes == self.num_classes).sum().item())
             num_fg_samples.append(gt_classes.numel() - num_bg_samples[-1])
             proposals_with_gt.append(proposals_per_image)
 
@@ -232,8 +233,9 @@ class TemporalROIHeads(torch.nn.Module):
         if batched_inputs is not None:
             video_folders = [b["video_folder"] for b in batched_inputs]
             counter = Counter(video_folders)
-            assert (len(set(counter.values())) == 1
-                    ), "videos with different numbers of frames"
+            assert (
+                len(set(counter.values())) == 1
+            ), "videos with different numbers of frames"
             num_videos = len(counter)
             assert num_videos == 1, "Support only one video per GPU!"
         else:
@@ -250,25 +252,20 @@ class TemporalROIHeads(torch.nn.Module):
         causal_masks = []
 
         for i in range(len(boxes)):
-            boxes[i] = F.pad(boxes[i],
-                             [0, 0, 0, out_num_proposals - num_proposals[i]])
+            boxes[i] = F.pad(boxes[i], [0, 0, 0, out_num_proposals - num_proposals[i]])
             box_features[i] = F.pad(
-                box_features[i],
-                [0, 0, 0, out_num_proposals - num_proposals[i]])
+                box_features[i], [0, 0, 0, out_num_proposals - num_proposals[i]]
+            )
             valid_boxes.append(
-                torch.arange(out_num_proposals, device=device) <
-                num_proposals[i])
-            basemask = torch.arange(out_num_proposals,
-                                    device=device) < num_proposals[i]
+                torch.arange(out_num_proposals, device=device) < num_proposals[i]
+            )
+            basemask = torch.arange(out_num_proposals, device=device) < num_proposals[i]
             if self.training:
                 gtmask = proposals[i].notgt_bool
-                basemask[
-                    0:num_proposals[i]] = basemask[0:num_proposals[i]] & gtmask
+                basemask[0 : num_proposals[i]] = basemask[0 : num_proposals[i]] & gtmask
             valid_boxes_exceptgt.append(basemask)
 
-            causal_mask = torch.arange(
-                out_num_proposals * len(boxes),
-                device=device) < (i + 1) * out_num_proposals
+            causal_mask = torch.arange(out_num_proposals * len(boxes), device=device) < (i + 1) * out_num_proposals
             causal_mask = causal_mask.unsqueeze(0).repeat(out_num_proposals, 1)
             causal_masks.append(causal_mask)
 
@@ -279,18 +276,16 @@ class TemporalROIHeads(torch.nn.Module):
         causal_mask = torch.cat(causal_masks, dim=0)
 
         boxes = boxes.reshape(num_videos, -1, 4)
-        box_features = box_features.reshape(num_videos, -1,
-                                            box_features.shape[-1])
+        box_features = box_features.reshape(num_videos, -1, box_features.shape[-1])
         valid_boxes = valid_boxes.reshape(num_videos, -1)
         valid_boxes_exceptgt = valid_boxes_exceptgt.reshape(num_videos, -1)
-        causal_mask = causal_mask.reshape(num_videos, valid_boxes.shape[1],
-                                          valid_boxes.shape[1])
+        causal_mask = causal_mask.reshape(num_videos, valid_boxes.shape[1], valid_boxes.shape[1])
 
         return boxes, box_features, valid_boxes, valid_boxes_exceptgt, causal_mask
 
     def reorganize_proposals_for_single_video(
-            self, proposals: List[Instances],
-            box_features: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        self, proposals: List[Instances], box_features: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Prepare data for relation modules.
         This function is designed for test mode, which means all proposals are
@@ -309,15 +304,11 @@ class TemporalROIHeads(torch.nn.Module):
             causal_masks = []
             for i in range(len(num_proposals)):
                 if num_proposals[i] == 0: continue
-                causal_mask = torch.arange(sum(num_proposals),
-                                           device=device) < sum(
-                                               num_proposals[:i + 1])
-                causal_mask = causal_mask.unsqueeze(0).repeat(
-                    num_proposals[i], 1)
+                causal_mask = torch.arange(sum(num_proposals), device=device) < sum(num_proposals[:i+1])
+                causal_mask = causal_mask.unsqueeze(0).repeat(num_proposals[i], 1)
                 causal_masks.append(causal_mask)
             causal_mask = torch.cat(causal_masks, dim=0)
-            causal_mask = causal_mask.reshape(1, boxes.shape[1],
-                                              boxes.shape[1])
+            causal_mask = causal_mask.reshape(1, boxes.shape[1], boxes.shape[1])
         else:
             causal_mask = None
         return boxes, box_features, causal_mask
@@ -326,9 +317,8 @@ class TemporalROIHeads(torch.nn.Module):
         self,
         proposals: List[Instances],
         box_features: torch.Tensor,
-        multi_features: torch.Tensor = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor,
-               torch.Tensor]:
+        multi_features: torch.Tensor=None, 
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         # box type: x1, y1, x2, y2
         boxes = [p.proposal_boxes.tensor for p in proposals]
         num_proposals = [len(b) for b in boxes]
@@ -339,20 +329,17 @@ class TemporalROIHeads(torch.nn.Module):
         valid_boxes_exceptgt = []
 
         for i in range(len(boxes)):
-            boxes[i] = F.pad(boxes[i],
-                             [0, 0, 0, out_num_proposals - num_proposals[i]])
+            boxes[i] = F.pad(boxes[i], [0, 0, 0, out_num_proposals - num_proposals[i]])
             box_features[i] = F.pad(
-                box_features[i],
-                [0, 0, 0, out_num_proposals - num_proposals[i]])
+                box_features[i], [0, 0, 0, out_num_proposals - num_proposals[i]]
+            )
             valid_boxes.append(
-                torch.arange(out_num_proposals, device=device) <
-                num_proposals[i])
-            basemask = torch.arange(out_num_proposals,
-                                    device=device) < num_proposals[i]
+                torch.arange(out_num_proposals, device=device) < num_proposals[i]
+            )
+            basemask = torch.arange(out_num_proposals, device=device) < num_proposals[i]
             if self.training:
                 gtmask = proposals[i].notgt_bool
-                basemask[
-                    0:num_proposals[i]] = basemask[0:num_proposals[i]] & gtmask
+                basemask[0 : num_proposals[i]] = basemask[0 : num_proposals[i]] & gtmask
             valid_boxes_exceptgt.append(basemask)
 
         if multi_features is not None:
@@ -360,8 +347,8 @@ class TemporalROIHeads(torch.nn.Module):
             multi_features = list(multi_features.split(num_proposals, dim=-2))
             for i in range(len(boxes)):
                 multi_features[i] = F.pad(
-                    multi_features[i],
-                    [0, 0, 0, out_num_proposals - num_proposals[i]])
+                    multi_features[i], [0, 0, 0, out_num_proposals - num_proposals[i]]
+                )
             # (num_frames, B, out_num_prop, D)
             multi_features = torch.stack(multi_features, dim=1)
 
@@ -425,10 +412,10 @@ class Res5TemporalROIBoxHeads(TemporalROIHeads):
         assert len(self.in_features) == 1
 
         # fmt: off
-        pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_type = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
-        pooler_scales = (1.0 / self.feature_strides[self.in_features[0]], )
-        sampling_ratio = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
+        pooler_resolution   = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
+        pooler_type         = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
+        pooler_scales       = (1.0 / self.feature_strides[self.in_features[0]],)
+        sampling_ratio      = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         # fmt: on
         assert not cfg.MODEL.KEYPOINT_ON
         assert not cfg.MODEL.MASK_ON
@@ -441,8 +428,7 @@ class Res5TemporalROIBoxHeads(TemporalROIHeads):
         )
 
         self.res5, out_channels = self._build_res5_block(cfg)
-        self.relation, out_channels = self._build_relation_module(
-            cfg, out_channels)
+        self.relation, out_channels = self._build_relation_module(cfg, out_channels)
         self.box_predictor = FastRCNNOutputLayers(
             out_channels,
             box2box_transform=self.box2box_transform,
@@ -452,6 +438,7 @@ class Res5TemporalROIBoxHeads(TemporalROIHeads):
             test_score_thresh=self.test_score_thresh,
             test_nms_thresh=self.test_nms_thresh,
             test_topk_per_image=self.test_detections_per_img,
+            organ_specific=cfg.MODEL.ORGAN_SPECIFIC.ENABLE,
         )
         buffer_length = self.interval_pre_test + self.interval_after_test + 1
         self.history_buffer = deque(maxlen=buffer_length)
@@ -461,16 +448,19 @@ class Res5TemporalROIBoxHeads(TemporalROIHeads):
     def _build_caches(self):
         self.history_buffer.clear()
 
+    def reset(self):
+        self._build_caches()
+
     def _build_res5_block(self, cfg):
         # fmt: off
-        stage_channel_factor = 2**3  # res5 is 8x res2
-        num_groups = cfg.MODEL.RESNETS.NUM_GROUPS
-        width_per_group = cfg.MODEL.RESNETS.WIDTH_PER_GROUP
-        bottleneck_channels = num_groups * width_per_group * stage_channel_factor
-        out_channels = cfg.MODEL.RESNETS.RES2_OUT_CHANNELS * stage_channel_factor
-        half_channel = cfg.MODEL.RESNETS.HALF_CHANNEL
-        res5_out_channel = cfg.MODEL.RESNETS.RES5_OUT_CHANNEL
-        if half_channel:  # deprecated, using res5_out_channel to set RDN channels
+        stage_channel_factor    = 2 ** 3  # res5 is 8x res2
+        num_groups              = cfg.MODEL.RESNETS.NUM_GROUPS
+        width_per_group         = cfg.MODEL.RESNETS.WIDTH_PER_GROUP
+        bottleneck_channels     = num_groups * width_per_group * stage_channel_factor
+        out_channels            = cfg.MODEL.RESNETS.RES2_OUT_CHANNELS * stage_channel_factor
+        half_channel            = cfg.MODEL.RESNETS.HALF_CHANNEL
+        res5_out_channel        = cfg.MODEL.RESNETS.RES5_OUT_CHANNEL
+        if half_channel: # deprecated, using res5_out_channel to set RDN channels
             res5_out_channel = 256
         stride_in_1x1 = cfg.MODEL.RESNETS.STRIDE_IN_1X1
         norm = cfg.MODEL.RESNETS.NORM
@@ -524,8 +514,81 @@ class Res5TemporalROIBoxHeads(TemporalROIHeads):
 
     def forward(self, batched_inputs, features, proposals, targets=None):
         if self.training:
-            return self.forward_train(batched_inputs, features, proposals,
-                                      targets)
+            return self.forward_train(batched_inputs, features, proposals, targets)
         else:
-            return self.forward_test(batched_inputs, features, proposals,
-                                     targets)
+            return self.forward_test(batched_inputs, features, proposals, targets)
+
+    def forward_train(self, batched_inputs, features, proposals, targets=None):
+        """
+        See :class:`ROIHeads.forward`.
+        The input images is replaced by batched_inputs, to get video informations.
+        """
+        proposals = self.label_and_sample_proposals(proposals, targets)
+        proposal_boxes = [x.proposal_boxes for x in proposals]
+        num_boxes = sum([len(p) for p in proposal_boxes])
+        if num_boxes == 0:
+            losses = {
+                "loss_cls": torch.tensor(0.0, device=proposal_boxes[0].tensor.device),
+                "loss_box_reg": torch.tensor(0.0, device=proposal_boxes[0].tensor.device)
+            }
+            return [], losses
+
+        box_features = self._shared_roi_transform(
+            [features[f] for f in self.in_features], proposal_boxes
+        )
+        feature_pooled = box_features.mean(dim=[2, 3])
+        (
+            boxes,
+            box_features,
+            is_valid,
+            valid_boxes_exceptgt,
+            causal_mask,
+        ) = self.reorganize_proposals_by_video(
+            batched_inputs, proposals, feature_pooled
+        )
+        relation_mask = valid_boxes_exceptgt.unsqueeze(1).repeat(
+            1, is_valid.shape[1], 1
+        )
+        if self.causal_relation:
+            relation_mask &= causal_mask
+        box_features = self.relation(boxes, box_features, mask=relation_mask)
+        box_features = box_features[is_valid]
+        box_features = torch.flatten(box_features, start_dim=0, end_dim=-2)
+        predictions  = self.box_predictor(box_features)
+
+        del feature_pooled, box_features
+        losses = self.box_predictor.losses(predictions, proposals)
+        del features
+        return [], losses
+
+    def forward_test(self, batched_inputs, features, proposals, targets=None):
+
+        assert len(batched_inputs) == 1
+        assert len(proposals) == 1
+        assert targets is None
+
+        proposal_boxes = [x.proposal_boxes for x in proposals]
+        box_features = self._shared_roi_transform(
+            [features[f] for f in self.in_features], proposal_boxes
+        )
+        feature_pooled = box_features.mean(dim=[2, 3])  # pooled to 1x1
+        self.history_buffer.append(frame_cache(proposals[0], feature_pooled))
+
+        proposals    = [x.proposal for x in self.history_buffer]
+        box_features = [x.feature for x in self.history_buffer]
+        box_features = torch.cat(box_features, dim=0)
+
+        boxes, box_features, causal_mask = self.reorganize_proposals_for_single_video(
+            proposals, box_features
+        )
+        box_features = self.relation(boxes, box_features, mask=causal_mask)
+        box_features = torch.flatten(box_features, start_dim=0, end_dim=-2)
+        box_features = box_features.split([len(p) for p in proposals])
+
+        proposals = [proposals[-1]]
+        box_features = box_features[-1]
+
+        predictions = self.box_predictor(box_features)
+        pred_instances, _ = self.box_predictor.inference(predictions, proposals)
+
+        return pred_instances, {}

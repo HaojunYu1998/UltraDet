@@ -1,0 +1,2 @@
+_BASE_: "Base-MEGA_R34_C4.yaml"
+OUTPUT_DIR: "miccai_outputs/MEGA/fold0_iter1w"

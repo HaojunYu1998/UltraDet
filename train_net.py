@@ -37,6 +37,12 @@ from detectron2.solver.build import maybe_add_gradient_clipping
 
 from ultrasound_vid.config import (
     add_ultrasound_config,
+    add_defcn_config,
+    add_deformable_detr_config,
+    add_fcos_config,
+    add_yolox_config,
+    add_swin_config,
+    add_tracker_config,
 )
 from ultrasound_vid.data import (
     build_video_detection_train_loader,
@@ -135,6 +141,7 @@ class Trainer(DefaultTrainer):
         logger = logging.getLogger("ultrasound_vid")
         output_dir = cfg.OUTPUT_DIR
         os.makedirs(os.path.join(output_dir, "predictions"), exist_ok=True)
+        rpn_only = cfg.MODEL.RPN_ONLY_TEST
         skip_exists = cfg.TEST.SKIP_EXISTS
         results = OrderedDict()
         dataset_name = f"breast{suffix}_{split}"
@@ -144,6 +151,7 @@ class Trainer(DefaultTrainer):
             data_loader,
             dataset_name,
             save_folder=output_dir,
+            rpn_only=rpn_only,
             skip_exists=skip_exists,
         )
         results[dataset_name] = results_i
@@ -166,6 +174,12 @@ def setup(args):
     """
     cfg = get_cfg()
     add_ultrasound_config(cfg)
+    add_defcn_config(cfg)
+    add_deformable_detr_config(cfg)
+    add_fcos_config(cfg)
+    add_yolox_config(cfg)
+    add_swin_config(cfg)
+    add_tracker_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     if cfg.AUTO_DIR:

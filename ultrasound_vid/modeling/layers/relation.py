@@ -4,15 +4,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class MultiHeadAttentionWithGeo(nn.Module):
-    def __init__(self, in_features, head_num, bias=True, activation=F.relu, return_atten=False):
-        """Multi-head attention.
+class RelationModule(nn.Module):
+    def __init__(self, in_features, head_num, bias=True, activation=F.relu, return_attn=False):
+        """Multi-head attntion.
         :param in_features: Size of each input sample.
         :param head_num: Number of heads.
         :param bias: Whether to use the bias term.
         :param activation: The activation after each linear transformation.
         """
-        super(MultiHeadAttentionWithGeo, self).__init__()
+        super(RelationModule, self).__init__()
         if in_features % head_num != 0:
             raise ValueError(
                 "`in_features`({}) should be divisible by `head_num`({})".format(
@@ -23,7 +23,7 @@ class MultiHeadAttentionWithGeo(nn.Module):
         self.head_num = head_num
         self.activation = activation
         self.bias = bias
-        self.return_atten = return_atten
+        self.return_attn = return_attn
         self.linear_q = nn.Linear(in_features, in_features, bias)
         self.linear_k = nn.Linear(in_features, in_features, bias)
         self.linear_v = nn.Linear(in_features, in_features, bias)
@@ -49,7 +49,7 @@ class MultiHeadAttentionWithGeo(nn.Module):
         pos_embedding = pos_embedding.permute(0, 2, 3, 1)
         geo_score = self.geo_trans(pos_embedding)
         geo_score = geo_score.permute(0, 3, 1, 2)
-        geo_score = self._reshape_to_atten(geo_score)
+        geo_score = self._reshape_to_attn(geo_score)
         geo_score = F.relu(geo_score)
 
         # appeareance score: [batchsize * head_num, N_q, N_k]
@@ -61,26 +61,26 @@ class MultiHeadAttentionWithGeo(nn.Module):
 
         if mask is not None:
             mask = mask.unsqueeze(1).repeat(1, self.head_num, 1, 1)
-            mask = self._reshape_to_atten(mask)
+            mask = self._reshape_to_attn(mask)
             scores = scores.masked_fill(mask == 0, -1e9)
-        atten = F.softmax(scores, dim=-1)
-        y = atten.matmul(v)
+        attn = F.softmax(scores, dim=-1)
+        y = attn.matmul(v)
         y = self._reshape_from_batches(y)
 
         y = self.linear_o(y)
         if self.activation is not None:
             y = self.activation(y)
-        if self.return_atten:
-            atten = self._reshape_from_atten(atten)
-            return y, atten
+        if self.return_attn:
+            attn = self._reshape_from_attn(attn)
+            return y, attn
         return y
 
-    def _reshape_to_atten(self, x):
+    def _reshape_to_attn(self, x):
         batch_size, head_num, N_q, N_k = x.size()
         assert head_num == self.head_num
         return x.reshape(batch_size * head_num, N_q, N_k)
 
-    def _reshape_from_atten(self, x):
+    def _reshape_from_attn(self, x):
         batch_size, N_q, N_k = x.size()
         batch_size //= self.head_num
         return (
@@ -116,6 +116,89 @@ class MultiHeadAttentionWithGeo(nn.Module):
         )
 
 
+class AttentionModule(RelationModule):
+    """Multi-Head Attention module for"""
+
+    def __init__(self, in_features, head_num, bias=True, activation=F.relu, return_attn=False):
+        """Multi-head attntion.
+        :param in_features: Size of each input sample.
+        :param head_num: Number of heads.
+        :param bias: Whether to use the bias term.
+        :param activation: The activation after each linear transformation.
+        """
+        super().__init__(in_features, head_num, bias, activation, return_attn)
+        if in_features % head_num != 0:
+            raise ValueError(
+                "`in_features`({}) should be divisible by `head_num`({})".format(
+                    in_features, head_num
+                )
+            )
+        self.in_features = in_features
+        self.head_num = head_num
+        self.activation = activation
+        self.bias = bias
+        self.return_attn = return_attn
+        self.linear_q = nn.Linear(in_features, in_features, bias)
+        self.linear_k = nn.Linear(in_features, in_features, bias)
+        self.linear_v = nn.Linear(in_features, in_features, bias)
+        self.linear_o = nn.Linear(in_features, in_features, bias)
+
+    def embedding_position(self, boxes):
+        """
+        Params:
+            box: Tensor (B, N, 4)
+        Return:
+            pos: Tensor (B, N, D)
+        """
+        dim_t = torch.arange(self.in_features // 8, dtype=torch.float32, device=boxes.device)
+        dim_t = 2 ** dim_t * math.pi
+
+        pos = boxes[:, :, :, None] * dim_t[None, None, None, :]
+
+        pos_x1 = torch.stack((pos[:, :, [0]].sin(), pos[:, :, [0]].cos()), dim=-1).flatten(2)
+        pos_y1 = torch.stack((pos[:, :, [1]].sin(), pos[:, :, [1]].cos()), dim=-1).flatten(2)
+        pos_x2 = torch.stack((pos[:, :, [2]].sin(), pos[:, :, [2]].cos()), dim=-1).flatten(2)
+        pos_y2 = torch.stack((pos[:, :, [3]].sin(), pos[:, :, [3]].cos()), dim=-1).flatten(2)
+        pos = torch.cat((pos_x1, pos_y1, pos_x2, pos_y2), dim=-1)
+        return pos
+
+    def forward(self, q, k, v, boxes, mask=None):
+        pos_embedding = self.embedding_position(boxes)
+        q = q + pos_embedding
+        k = k + pos_embedding
+
+        q, k, v = self.linear_q(q), self.linear_k(k), self.linear_v(v)
+        if self.activation is not None:
+            q = self.activation(q)
+            k = self.activation(k)
+            v = self.activation(v)
+
+        # to [batchsize * head_num, seq_len, sub_dim]
+        q = self._reshape_to_batches(q)
+        k = self._reshape_to_batches(k)
+        v = self._reshape_to_batches(v)
+
+        # appeareance score: [batchsize * head_num, N_q, N_k]
+        dk = q.size()[-1]
+        scores = q.matmul(k.transpose(-2, -1)) / math.sqrt(dk)
+
+        if mask is not None:
+            mask = mask.unsqueeze(1).repeat(1, self.head_num, 1, 1)
+            mask = self._reshape_to_attn(mask)
+            scores = scores.masked_fill(mask == 0, -1e9)
+        attn = F.softmax(scores, dim=-1)
+        y = attn.matmul(v)
+        y = self._reshape_from_batches(y)
+
+        y = self.linear_o(y)
+        if self.activation is not None:
+            y = self.activation(y)
+        if self.return_attn:
+            attn = self._reshape_from_attn(attn)
+            return y, attn
+        return y
+
+
 class ROIRelationLayers(nn.Module):
     """Multi-Head Attention module for"""
 
@@ -123,22 +206,29 @@ class ROIRelationLayers(nn.Module):
         super().__init__()
         head_num = cfg.MODEL.ROI_BOX_HEAD.RELATION_HEAD_NUMS
         layer_num = cfg.MODEL.ROI_BOX_HEAD.RELATION_LAYER_NUMS
+        use_attn = cfg.MODEL.ROI_BOX_HEAD.USE_ATTENTION
         self.in_features = in_features
+        relation = RelationModule if not use_attn else AttentionModule
         self.layers = nn.ModuleList(
-            [MultiHeadAttentionWithGeo(in_features, head_num) for _ in range(layer_num)]
+            [relation(in_features, head_num) for _ in range(layer_num)]
         )
-        feat_range = torch.arange(0, self.in_features / 8)
-        div_mat = (
-            torch.full_like(feat_range, 1000.0).pow(8.0 / self.in_features * feat_range)
-            / 100.0
-        )
-        self.div_mat = nn.Parameter(div_mat, requires_grad=False)
+        if not use_attn:
+            feat_range = torch.arange(0, self.in_features / 8)
+            div_mat = (
+                torch.full_like(feat_range, 1000.0).pow(8.0 / self.in_features * feat_range)
+                / 100.0
+            )
+            self.div_mat = nn.Parameter(div_mat, requires_grad=False)
         self.head_num = head_num
         self.layer_num = layer_num
+        self.use_attn = use_attn
 
     def forward(self, boxes, features, mask=None, return_intermediate=False):
-        relative_position = self.extract_relative_position(boxes, boxes)
-        position_embedding = self.embedding_relative_position(relative_position)
+        if self.use_attn:
+            position_embedding = boxes.reshape(1, -1, 4)
+        else:
+            relative_position = self.extract_relative_position(boxes, boxes)
+            position_embedding = self.embedding_relative_position(relative_position)
 
         x = features
         outputs = [x]
@@ -157,6 +247,7 @@ class ROIRelationLayers(nn.Module):
             ref_boxes: (1, N_mem, 4)
             ref_features: (Lyr, N_mem, D)
         """
+        assert not self.use_attn
         all_boxes = torch.cat([boxes, ref_boxes], dim=1)
         relative_position = self.extract_relative_position(boxes, all_boxes)
         position_embedding = self.embedding_relative_position(relative_position)
@@ -212,8 +303,3 @@ class ROIRelationLayers(nn.Module):
         # (B, D, Nq, Nk)
         embedding = embedding.permute(0, 3, 1, 2)
         return embedding
-
-
-def _get_clones(module, N):
-    import copy
-    return nn.ModuleList([copy.deepcopy(module) for i in range(N)])

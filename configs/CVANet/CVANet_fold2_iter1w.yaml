@@ -1,0 +1,4 @@
+_BASE_: "CVANet_fold0_iter1w.yaml"
+OUTPUT_DIR: "miccai_outputs/CVANet/fold2_iter1w"
+DATASETS:
+  TEST_FOLDS: (2,)

@@ -24,14 +24,17 @@ class Res5FlowContextHeads(Res5TemporalROIBoxHeads):
         self.context_feature        = cfg.MODEL.CONTEXT_FEATURE
         self.roi_size               = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
         self.roi_rel_position       = cfg.MODEL.ROI_BOX_HEAD.ROI_REL_POSITION
+        self.no_aux_loss            = cfg.MODEL.ROI_BOX_HEAD.NO_AUX_LOSS
         # spatial position encoding for RoI feature
         self.build_relative_roi_pos_embed()
         self.num_context_frames = cfg.MODEL.CONTEXT_FLOW_FRAMES
+        self.use_iof_align = cfg.MODEL.CONTEXT_IOF_ALIGN
         self.step = cfg.MODEL.CONTEXT_STEP_LEN
         self.flownet_weights = cfg.MODEL.FLOWNET_WEIGHTS
         self.relation = FlowContextLayers(cfg, self.d_model)
-        self.flownet = FlowNetS(cfg, flownet_method="DFF")
-        self.init_flownet()
+        if self.use_iof_align:
+            self.flownet = FlowNetS(cfg, flownet_method="DFF")
+            self.init_flownet()
         self.context_image_buffer = deque(maxlen=self.num_context_frames)
         self.context_feature_buffer = deque(maxlen=self.num_context_frames)
         self.frame_idx = 0
@@ -88,9 +91,12 @@ class Res5FlowContextHeads(Res5TemporalROIBoxHeads):
         assert len(proposal_boxes) == len(local_images)
         # extract frame proposal freatures
         num_context_frames = len(context_images)
-        warped_context_features = self.warp_context_features(
-            local_images, context_images, context_features
-        ) # [(T * B, D, H, W)]
+        if self.use_iof_align:
+            warped_context_features = self.warp_context_features(
+                local_images, context_images, context_features
+            ) # [(T * B, D, H, W)]
+        else:
+            warped_context_features = context_features
         # (T * B, num_prop, 7, 7, d_model)
         multi_features = self._shared_roi_transform(
             warped_context_features, 
@@ -180,6 +186,10 @@ class Res5FlowContextHeads(Res5TemporalROIBoxHeads):
         box_features = self.relation(
             boxes, box_features, multi_features, valid_boxes_exceptgt
         )
+        if self.no_aux_loss:
+            box_features = box_features[[-1]]
+            is_valid = is_valid[[-1]]
+            proposals = [proposals[-1]]
         box_features = box_features.reshape(-1, self.d_model)
         box_features = box_features[is_valid.flatten()]
         predictions  = self.box_predictor(box_features)
@@ -199,7 +209,7 @@ class Res5FlowContextHeads(Res5TemporalROIBoxHeads):
         images = batched_inputs
         roi_position = self.extract_roi_pos_embed()
         # update context buffer
-        if self.frame_idx % 10 == 0:
+        if self.frame_idx % self.step == 0:
             context_features = [features[f] for f in self.context_feature]
             self.context_image_buffer.append(images.tensor)
             self.context_feature_buffer.append(context_features)
@@ -276,7 +286,7 @@ class Res5FlowContextHeads(Res5TemporalROIBoxHeads):
         return pred_instances, {}
 
     def reset(self):
-        self.history_buffer.clear()
+        super().reset()
         self.context_image_buffer.clear()
         self.context_feature_buffer.clear()
         self.frame_idx = 0
